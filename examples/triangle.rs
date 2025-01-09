@@ -1,8 +1,4 @@
-use dyngpu::error::Error;
-use dyngpu::prelude::RenderApp;
-use dyngpu::resource::shaders::Shaders;
-use dyngpu::task::Task;
-use dyngpu::{collections, gpu};
+use dyngpu::prelude::{Error, GpuContext, RenderApp, Shaders, Task, TypeMap};
 use wgpu::{include_wgsl, vertex_attr_array, Buffer, BufferAddress, RenderPass, RenderPipeline, VertexBufferLayout, VertexStepMode};
 
 pub fn main() -> Result<(), Error> {
@@ -19,7 +15,7 @@ pub struct RenderTriangle {
 impl Task for RenderTriangle {
     type State = ();
 
-    fn new(gpu: gpu::Context, res: &mut collections::TypeMap) -> Self where Self: Sized {
+    fn new(gpu: GpuContext, res: &mut TypeMap) -> Self where Self: Sized {
         let mut shaders = res.resource_mut::<Shaders>(&gpu);
         let shader = shaders.create("triangle", include_wgsl!("triangle.wgsl"));
 
@@ -40,9 +36,9 @@ impl Task for RenderTriangle {
         }
     }
 
-    fn update(&mut self, _: &Self::State, _: gpu::Context) {}
+    fn update(&mut self, _: &Self::State, _: GpuContext) {}
 
-    fn render(&self, _: gpu::Context, render_pass: &mut RenderPass) {
+    fn render(&self, _: GpuContext, render_pass: &mut RenderPass) {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.draw(0..3, 0..1);
