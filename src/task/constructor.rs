@@ -7,7 +7,7 @@ pub struct TaskConstructor<S> {
 impl<S> TaskConstructor<S> {
     pub const fn new<T: task::Task<State = S> + 'static>() -> Self {
         Self {
-            function: construct::<S, T>
+            function: construct::<S, T>,
         }
     }
 
@@ -18,10 +18,4 @@ impl<S> TaskConstructor<S> {
 
 fn construct<S, T: task::Task<State = S> + 'static>(gpu: gpu::Context, res: &mut collections::TypeMap) -> Box<dyn task::Task<State = S>> {
     Box::new(T::new(gpu, res))
-}
-
-impl<S> std::fmt::Debug for TaskConstructor<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TaskConstructor").finish()
-    }
 }

@@ -9,13 +9,11 @@ pub struct TaskExecutor<S> {
 
 impl<S> TaskExecutor<S> {
     pub fn load_pending_tasks(&mut self, render: &mut RenderGpu) {
-        let mut tasks = Vec::with_capacity(self.constructors.len());
         for constructor in &self.constructors {
             let task = constructor.build(render.context.clone(), &mut render.resources);
-            tasks.push(task);
+            self.tasks.push(task);
         }
         self.constructors.clear();
-        self.tasks.extend(tasks);
     }
 
     pub fn queue_task_constructor(&mut self, constructor: task::Constructor<S>) {
@@ -58,11 +56,5 @@ impl<S> Default for TaskExecutor<S> {
             constructors: vec![],
             tasks: vec![],
         }
-    }
-}
-
-impl<S> std::fmt::Debug for TaskExecutor<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TaskExecutor").finish()
     }
 }

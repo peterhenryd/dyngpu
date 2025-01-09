@@ -23,7 +23,6 @@ pub mod prelude {
     pub use crate::winit::{App, RenderApp, RenderWindow};
 }
 
-#[derive(Debug)]
 pub struct Render<'w, S> {
     gpu: Option<gpu::RenderGpu<'w>>,
     task_executor: task::Executor<S>,
