@@ -1,10 +1,10 @@
+use crate::gpu;
 use bytemuck::NoUninit;
-use crate::prelude::context::GpuContext;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{Buffer, BufferDescriptor, BufferUsages};
 
 pub struct BufferBuilder<'w, 'a> {
-    ctx: GpuContext<'w>,
+    ctx: gpu::Context<'w>,
     label: Option<&'a str>,
     contents: Option<&'a [u8]>,
     size: u64,
@@ -59,7 +59,7 @@ impl<'a> BufferBuilder<'_, 'a> {
     }
 }
 
-impl<'w> GpuContext<'w> {
+impl<'w> gpu::Context<'w> {
     pub fn build_buffer(&self) -> BufferBuilder<'w, '_> {
         BufferBuilder {
             label: None,

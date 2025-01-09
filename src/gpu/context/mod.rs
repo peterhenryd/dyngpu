@@ -1,15 +1,13 @@
 pub mod render_pipeline;
 pub mod buffer;
-mod bind_group;
-
-use std::sync::Arc;
+pub mod bind_group;
 
 #[derive(Debug, Clone)]
-pub struct GpuContext<'w>(Arc<GpuOwned<'w>>);
+pub struct GpuContext<'w>(std::sync::Arc<GpuOwned<'w>>);
 
 impl<'w> GpuContext<'w> {
     pub fn new(device: wgpu::Device, queue: wgpu::Queue, surface: wgpu::Surface<'w>) -> Result<Self, wgpu::RequestDeviceError> {
-        Ok(Self(Arc::new(GpuOwned { device, queue, surface })))
+        Ok(Self(std::sync::Arc::new(GpuOwned { device, queue, surface })))
     }
 
     pub fn device(&self) -> &wgpu::Device {

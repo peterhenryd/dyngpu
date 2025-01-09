@@ -7,7 +7,7 @@ pub use executor::TaskExecutor as Executor;
 pub use constructor::TaskConstructor as Constructor;
 
 pub trait Task {
-    type State ;
+    type State;
 
     fn new(gpu: gpu::Context, res: &mut collections::TypeMap) -> Self where Self: Sized;
 

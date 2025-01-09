@@ -1,26 +1,10 @@
 use crate::{gpu, task};
 use crate::gpu::RenderGpu;
-use std::fmt::{Debug, Formatter};
 use wgpu::RenderPass;
 
 pub struct TaskExecutor<S> {
     constructors: Vec<task::Constructor<S>>,
     tasks: Vec<Box<dyn task::Task<State = S>>>,
-}
-
-impl<S> Default for TaskExecutor<S> {
-    fn default() -> Self {
-        Self {
-            constructors: vec![],
-            tasks: vec![],
-        }
-    }
-}
-
-impl<S> Debug for TaskExecutor<S> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TaskExecutor").finish()
-    }
 }
 
 impl<S> TaskExecutor<S> {
@@ -65,5 +49,20 @@ impl<S> TaskExecutor<S> {
     pub fn remove_all_tasks(&mut self) {
         self.remove_active_tasks();
         self.remove_pending_tasks();
+    }
+}
+
+impl<S> Default for TaskExecutor<S> {
+    fn default() -> Self {
+        Self {
+            constructors: vec![],
+            tasks: vec![],
+        }
+    }
+}
+
+impl<S> std::fmt::Debug for TaskExecutor<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TaskExecutor").finish()
     }
 }

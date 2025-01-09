@@ -1,6 +1,6 @@
+use crate::{gpu, resource};
 use std::sync::Arc;
 use wgpu::{ShaderModule, ShaderModuleDescriptor};
-use crate::{gpu, resource};
 
 #[derive(Default)]
 pub struct Shaders(hashbrown::HashMap<String, Arc<ShaderModule>>);

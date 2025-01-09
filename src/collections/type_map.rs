@@ -1,5 +1,5 @@
-use std::any::{Any, TypeId};
 use crate::{gpu, resource};
+use std::any::{Any, TypeId};
 
 #[derive(Default)]
 pub struct TypeMap {

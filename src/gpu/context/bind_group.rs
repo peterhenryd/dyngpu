@@ -1,5 +1,5 @@
-use wgpu::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Buffer, BufferBindingType, ShaderStages};
 use crate::gpu;
+use wgpu::*;
 
 pub struct BindGroupBuilder<'w, 'a> {
     ctx: gpu::Context<'w>,

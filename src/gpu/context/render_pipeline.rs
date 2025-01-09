@@ -1,8 +1,8 @@
-use crate::prelude::context::GpuContext;
+use crate::gpu;
 use wgpu::*;
 
 pub struct RenderPipelineBuilder<'w, 'a> {
-    pub ctx: GpuContext<'w>,
+    pub ctx: gpu::Context<'w>,
     pub label: Option<&'a str>,
     pub primitive_state: PrimitiveState,
     pub vertex_state: VertexStateIntermediate<'a>,
@@ -162,7 +162,7 @@ impl<'a> RenderPipelineBuilder<'_, 'a> {
     }
 }
 
-impl<'w> GpuContext<'w> {
+impl<'w> gpu::Context<'w> {
     pub fn build_pipeline<'a>(&self, shader: &'a ShaderModule) -> RenderPipelineBuilder<'w, 'a> {
         self.build_vert_pipeline(shader).default_frag()
     }

@@ -1,16 +1,15 @@
-use crate::error::Error;
-use crate::resolution::{GetResolution, Resolution};
 use crate::task::Task;
-use crate::Render;
-use std::ops::{Deref, DerefMut};
+use crate::{error, resolution, Render};
+
 use std::sync::Arc;
+
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize};
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 
-impl<T: Copy> Resolution<T> for PhysicalSize<T> {
+impl<T: Copy> resolution::Resolution<T> for PhysicalSize<T> {
     fn get_width(&self) -> T {
         self.width
     }
@@ -20,7 +19,7 @@ impl<T: Copy> Resolution<T> for PhysicalSize<T> {
     }
 }
 
-impl GetResolution<u32> for Window {
+impl resolution::GetResolution<u32> for Window {
     type Resolution = PhysicalSize<u32>;
 
     fn get_resolution(&self) -> Self::Resolution {
@@ -28,7 +27,7 @@ impl GetResolution<u32> for Window {
     }
 }
 
-impl GetResolution<u32> for Arc<Window> {
+impl resolution::GetResolution<u32> for Arc<Window> {
     type Resolution = PhysicalSize<u32>;
 
     fn get_resolution(&self) -> Self::Resolution {
@@ -50,7 +49,7 @@ impl<S> Default for RenderWindow<'_, S> {
     }
 }
 
-impl<'w, S> Deref for RenderWindow<'w, S> {
+impl<'w, S> std::ops::Deref for RenderWindow<'w, S> {
     type Target = Render<'w, S>;
 
     fn deref(&self) -> &Self::Target {
@@ -58,7 +57,7 @@ impl<'w, S> Deref for RenderWindow<'w, S> {
     }
 }
 
-impl<'w, S> DerefMut for RenderWindow<'w, S> {
+impl<'w, S> std::ops::DerefMut for RenderWindow<'w, S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.render
     }
@@ -73,7 +72,7 @@ impl<'w, S> RenderWindow<'w, S> {
         &mut self,
         window_attributes: &mut Option<WindowAttributes>,
         event_loop: &ActiveEventLoop
-    ) -> Result<(), Error> {
+    ) -> Result<(), error::Error> {
         let window_attributes = window_attributes.take().unwrap_or_default()
             .with_title("")
             .with_inner_size(LogicalSize::new(720, 480));
@@ -184,7 +183,7 @@ impl<S: App> RenderApp<'_, S> {
         self
     }
 
-    pub fn run(mut self) -> Result<(), Error> {
+    pub fn run(mut self) -> Result<(), error::Error> {
         Ok(EventLoop::new()?.run_app(&mut self)?)
     }
 }

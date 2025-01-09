@@ -1,12 +1,10 @@
-use crate::error::Error;
-use crate::resolution::Resolution;
-use pollster::FutureExt;
-use wgpu::{Adapter, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Features, Instance, Limits, LoadOp, MemoryHints, Operations, PowerPreference, RenderPassColorAttachment, RenderPassDescriptor, RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceTarget, TextureUsages, TextureViewDescriptor};
-
 pub mod context;
 
+use pollster::FutureExt;
+use wgpu::*;
+
 pub use context::GpuContext as Context;
-use crate::{collections, task};
+use crate::{collections, error, resolution, task};
 
 #[derive(Debug)]
 pub struct RenderGpu<'w> {
@@ -16,14 +14,14 @@ pub struct RenderGpu<'w> {
 }
 
 impl<'w> RenderGpu<'w> {
-    pub fn new(target: impl Into<SurfaceTarget<'w>>, resolution: impl Resolution<u32>) -> Result<Self, Error> {
+    pub fn new(target: impl Into<SurfaceTarget<'w>>, resolution: impl resolution::Resolution<u32>) -> Result<Self, error::Error> {
         let instance = Instance::default();
         let surface = instance.create_surface(target)?;
         let adapter = instance.request_adapter(&RequestAdapterOptions {
             power_preference: PowerPreference::default(),
             force_fallback_adapter: false,
             compatible_surface: Some(&surface),
-        }).block_on().ok_or(Error::RequestAdapter)?;
+        }).block_on().ok_or(error::Error::RequestAdapter)?;
         let (device, queue) = adapter.request_device(&DeviceDescriptor {
             required_features: Features::empty(),
             required_limits: Limits::default(),
@@ -37,7 +35,7 @@ impl<'w> RenderGpu<'w> {
         Ok(Self { context, surface_configuration, resources })
     }
 
-    pub fn resize(&mut self, resolution: impl Resolution<u32>) {
+    pub fn resize(&mut self, resolution: impl resolution::Resolution<u32>) {
         self.surface_configuration.width = resolution.get_width();
         self.surface_configuration.height = resolution.get_height();
         self.context.configure_surface(&self.surface_configuration);
@@ -78,7 +76,12 @@ impl<'w> RenderGpu<'w> {
     }
 }
 
-pub fn configure_surface(adapter: &Adapter, device: &Device, surface: &Surface, resolution: impl Resolution<u32>) -> SurfaceConfiguration {
+pub fn configure_surface(
+    adapter: &Adapter,
+    device: &Device,
+    surface: &Surface,
+    resolution: impl resolution::Resolution<u32>
+) -> SurfaceConfiguration {
     let capabilities = surface.get_capabilities(&adapter);
     let format = capabilities.formats.iter()
         .find(|f| f.is_srgb())
