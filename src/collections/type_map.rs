@@ -1,4 +1,3 @@
-use crate::{gpu, resource};
 use std::any::{Any, TypeId};
 
 #[derive(Default)]
@@ -96,13 +95,5 @@ impl TypeMap {
 
     pub fn require_mut<T: 'static>(&mut self) -> &mut T {
         self.get_mut().unwrap()
-    }
-
-    pub fn resource<'w, T: resource::Resource + 'static>(&mut self, ctx: &gpu::Context<'w>) -> T::Output<'w, '_> {
-        self.get_defaulted::<T>().contextualize(ctx.clone())
-    }
-
-    pub fn resource_mut<'w, T: resource::Resource + 'static>(&mut self, ctx: &gpu::Context<'w>) -> T::OutputMut<'w, '_> {
-        self.get_mut_defaulted::<T>().contextualize_mut(ctx.clone())
     }
 }

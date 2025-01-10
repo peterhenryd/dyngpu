@@ -3,56 +3,52 @@ pub mod error;
 pub mod gpu;
 pub mod resolution;
 pub mod resource;
-pub mod task;
 #[cfg(feature = "winit")]
 pub mod winit;
+pub mod stage;
 
-pub mod prelude {
-    pub use crate::Render;
-    pub use crate::collections::TypeMap;
-    pub use crate::error::Error;
-    pub use crate::gpu::{Context, RenderGpu};
-    pub use crate::gpu::context::GpuContext;
-    pub use crate::resolution::Resolution;
-    pub use crate::resource::Resource;
-    pub use crate::resource::shaders::Shaders;
-    pub use crate::task::Task;
-    pub use crate::task::constructor::TaskConstructor;
-    pub use crate::task::executor::TaskExecutor;
-    #[cfg(feature = "winit")]
-    pub use crate::winit::{App, RenderApp, RenderWindow};
+pub use collections::*;
+pub use error::*;
+pub use gpu::Gpu;
+pub use gpu::device::*;
+pub use gpu::surface::*;
+pub use stage::Stage;
+pub use stage::task::*;
+pub use stage::task::constructor::*;
+pub use stage::task::executor::*;
+pub use stage::store::*;
+pub use resolution::*;
+pub use resource::*;
+pub use resource::shaders::*;
+#[cfg(feature = "winit")]
+pub use winit::*;
+
+pub struct Renderer<'w> {
+    gpu: Option<Gpu<'w>>,
+    stages: Stages,
 }
 
-pub struct Render<'w, S> {
-    gpu: Option<gpu::RenderGpu<'w>>,
-    task_executor: task::Executor<S>,
-}
-
-impl<S> Default for Render<'_, S> {
+impl Default for Renderer<'_> {
     fn default() -> Self {
         Self {
             gpu: None,
-            task_executor: task::Executor::default(),
+            stages: Stages::default(),
         }
     }
 }
 
-impl<'w, S> Render<'w, S> {
-    pub fn draw_frame<'e>(&mut self, state: &S) {
+impl<'w> Renderer<'w> {
+    pub fn draw_frame<'e>(&mut self) {
         let Some(gpu) = &mut self.gpu else { return };
-        gpu.render(&mut self.task_executor, state);
+        gpu.render(&mut self.stages);
     }
 
-    pub fn add_task<T: task::Task<State = S> + 'static>(&mut self) {
-        self.task_executor.queue_task::<T>();
-    }
-
-    pub fn initialize<T>(&mut self, target: T) -> Result<(), error::Error>
+    pub fn initialize<T>(&mut self, target: T) -> Result<(), Error>
     where T: Into<wgpu::SurfaceTarget<'w>>,
-          T: resolution::GetResolution<u32> {
-        let resolution = target.get_resolution();
-        self.gpu = Some(gpu::RenderGpu::new(target, resolution)?);
-        self.task_executor.load_pending_tasks(self.gpu.as_mut().unwrap());
+          T: GetResolution<u32> {
+        let gpu = Gpu::new(target.get_resolution(), target)?;
+        self.gpu = Some(gpu);
+        self.stages.initialize(self.gpu.as_mut().unwrap());
         Ok(())
     }
 
@@ -60,20 +56,28 @@ impl<'w, S> Render<'w, S> {
         self.gpu.is_some()
     }
 
-    pub fn get_gpu(&self) -> Option<&gpu::RenderGpu<'w>> {
+    pub fn get_gpu(&self) -> Option<&Gpu<'w>> {
         self.gpu.as_ref()
     }
 
-    pub fn gpu(&self) -> &gpu::RenderGpu<'w> {
+    pub fn gpu(&self) -> &Gpu<'w> {
         self.get_gpu().unwrap()
     }
 
-    pub fn get_gpu_mut(&mut self) -> Option<&mut gpu::RenderGpu<'w>> {
+    pub fn get_gpu_mut(&mut self) -> Option<&mut Gpu<'w>> {
         self.gpu.as_mut()
     }
 
-    pub fn gpu_mut(&mut self) -> &mut gpu::RenderGpu<'w> {
+    pub fn gpu_mut(&mut self) -> &mut Gpu<'w> {
         self.get_gpu_mut().unwrap()
+    }
+
+    pub fn stages(&self) -> &Stages {
+        &self.stages
+    }
+
+    pub fn stages_mut(&mut self) -> &mut Stages {
+        &mut self.stages
     }
 }
 

@@ -1,17 +1,17 @@
-use crate::gpu;
+use crate::Device;
 use bytemuck::NoUninit;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{Buffer, BufferDescriptor, BufferUsages};
 
-pub struct BufferBuilder<'w, 'a> {
-    ctx: gpu::Context<'w>,
+pub struct BufferBuilder<'a> {
+    device: Device,
     label: Option<&'a str>,
     contents: Option<&'a [u8]>,
     size: u64,
     usage: BufferUsages,
 }
 
-impl<'a> BufferBuilder<'_, 'a> {
+impl<'a> BufferBuilder<'a> {
     pub fn size(mut self, size: u64) -> Self {
         self.size = size;
         self
@@ -28,13 +28,13 @@ impl<'a> BufferBuilder<'_, 'a> {
 
     pub fn finish(self) -> Buffer {
         if let Some(contents) = self.contents {
-            self.ctx.0.device.create_buffer_init(&BufferInitDescriptor {
+            self.device.0.device.create_buffer_init(&BufferInitDescriptor {
                 label: self.label,
                 contents,
                 usage: self.usage,
             })
         } else {
-            self.ctx.0.device.create_buffer(&BufferDescriptor {
+            self.device.0.device.create_buffer(&BufferDescriptor {
                 label: self.label,
                 size: self.size,
                 usage: self.usage,
@@ -59,11 +59,11 @@ impl<'a> BufferBuilder<'_, 'a> {
     }
 }
 
-impl<'w> gpu::Context<'w> {
-    pub fn build_buffer(&self) -> BufferBuilder<'w, '_> {
+impl Device {
+    pub fn build_buffer(&self) -> BufferBuilder<'_> {
         BufferBuilder {
             label: None,
-            ctx: self.clone(),
+            device: self.clone(),
             contents: None,
             size: 0,
             usage: BufferUsages::empty(),

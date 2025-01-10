@@ -1,8 +1,6 @@
-use crate::task::Task;
-use crate::{error, resolution, Render};
-
+use crate::stage::task::Task;
+use crate::{error, resolution, Renderer, Stage};
 use std::sync::Arc;
-
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize};
 use winit::event::WindowEvent;
@@ -35,35 +33,35 @@ impl resolution::GetResolution<u32> for Arc<Window> {
     }
 }
 
-pub struct RenderWindow<'w, S> {
+pub struct RendererWindow<'w> {
     window: Option<Arc<Window>>,
-    render: Render<'w, S>
+    render: Renderer<'w>
 }
 
-impl<S> Default for RenderWindow<'_, S> {
+impl Default for RendererWindow<'_> {
     fn default() -> Self {
         Self {
             window: None,
-            render: Render::<S>::default()
+            render: Renderer::default()
         }
     }
 }
 
-impl<'w, S> std::ops::Deref for RenderWindow<'w, S> {
-    type Target = Render<'w, S>;
+impl<'w> std::ops::Deref for RendererWindow<'w> {
+    type Target = Renderer<'w>;
 
     fn deref(&self) -> &Self::Target {
         &self.render
     }
 }
 
-impl<'w, S> std::ops::DerefMut for RenderWindow<'w, S> {
+impl<'w> std::ops::DerefMut for RendererWindow<'w> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.render
     }
 }
 
-impl<'w, S> RenderWindow<'w, S> {
+impl<'w> RendererWindow<'w> {
     pub fn is_initialized(&self) -> bool {
         self.window.is_some() && self.render.is_initialized()
     }
@@ -93,10 +91,9 @@ impl<'w, S> RenderWindow<'w, S> {
     }
 }
 
-pub struct RenderApp<'w, S = ()> {
-    render: RenderWindow<'w, S>,
+pub struct RenderApp<'w> {
+    renderer: RendererWindow<'w>,
     window_attributes: Option<WindowAttributes>,
-    state: S,
 }
 
 pub trait App {
@@ -107,10 +104,10 @@ impl App for () {
     fn update(&mut self) {}
 }
 
-impl<S: App> ApplicationHandler for RenderApp<'_, S> {
+impl ApplicationHandler for RenderApp<'_> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if !self.render.is_initialized() {
-            self.render.initialize(&mut self.window_attributes, event_loop).unwrap();
+        if !self.renderer.is_initialized() {
+            self.renderer.initialize(&mut self.window_attributes, event_loop).unwrap();
         }
     }
 
@@ -118,7 +115,7 @@ impl<S: App> ApplicationHandler for RenderApp<'_, S> {
         use WindowEvent::*;
         match event {
             Resized(size) => {
-                self.render.gpu_mut().resize(size)
+                self.renderer.gpu_mut().surface_mut().resize(size);
             },
             Moved(_) => {}
             CloseRequested | Destroyed => event_loop.exit(),
@@ -145,41 +142,38 @@ impl<S: App> ApplicationHandler for RenderApp<'_, S> {
             ThemeChanged(_) => {}
             Occluded(_) => {}
             RedrawRequested => {
-                self.state.update();
-                self.render.draw_frame(&self.state);
+                self.renderer.draw_frame();
+                self.renderer.window.as_ref().unwrap().request_redraw();
             }
             _ => {}
         }
     }
 }
 
-impl<S> From<S> for RenderApp<'_, S> {
-    fn from(state: S) -> Self {
+impl Default for RenderApp<'_> {
+    fn default() -> Self {
         Self {
-            render: RenderWindow::default(),
+            renderer: RendererWindow::default(),
             window_attributes: Some(WindowAttributes::default()
                 .with_title("")
                 .with_inner_size(LogicalSize::new(720, 480))
             ),
-            state
         }
     }
 }
 
-impl<S: Default> Default for RenderApp<'_, S> {
-    fn default() -> Self {
-        Self::from(S::default())
-    }
-}
-
-impl<S: App> RenderApp<'_, S> {
-    pub fn with_window_attributes(mut self, function: impl FnOnce(WindowAttributes) -> WindowAttributes) -> Self {
-        self.window_attributes = Some(function(self.window_attributes.take().unwrap_or_default()));
+impl RenderApp<'_> {
+    pub fn with_window_attributes(mut self, f: impl FnOnce(WindowAttributes) -> WindowAttributes) -> Self {
+        self.window_attributes = Some(f(self.window_attributes.take().unwrap_or_default()));
         self
     }
 
-    pub fn add_render_task<T: Task<State = S> + 'static>(mut self) -> Self {
-        self.render.task_executor.queue_task::<T>();
+    pub fn with_stage_task<T: Task + 'static>(self) -> Self {
+        self.with_stage(|s| s.with_task::<T>())
+    }
+
+    pub fn with_stage(mut self, f: impl FnOnce(Stage) -> Stage) -> Self {
+        self.renderer.stages_mut().add_stage(f(Stage::default()));
         self
     }
 

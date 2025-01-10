@@ -1,14 +1,14 @@
-use crate::gpu;
 use wgpu::*;
+use crate::gpu;
 
-pub struct BindGroupBuilder<'w, 'a> {
-    ctx: gpu::Context<'w>,
+pub struct BindGroupBuilder<'a> {
+    device: gpu::Device,
     bind_group_layout: Option<&'a BindGroupLayout>,
     bind_group_layout_entries: Vec<BindGroupLayoutEntry>,
     bind_group_entries: Vec<BindGroupEntry<'a>>,
 }
 
-impl<'a> BindGroupBuilder<'_, 'a> {
+impl<'a> BindGroupBuilder<'a> {
     pub fn override_layout(mut self, layout: &'a BindGroupLayout) -> Self {
         self.bind_group_layout = Some(layout);
         self
@@ -39,7 +39,7 @@ impl<'a> BindGroupBuilder<'_, 'a> {
         let mut bind_group_layout = None;
         let layout = match self.bind_group_layout {
             None => {
-                bind_group_layout = Some(self.ctx.device().create_bind_group_layout(&BindGroupLayoutDescriptor {
+                bind_group_layout = Some(self.device.as_ref().create_bind_group_layout(&BindGroupLayoutDescriptor {
                     label: None,
                     entries: &self.bind_group_layout_entries,
                 }));
@@ -48,7 +48,7 @@ impl<'a> BindGroupBuilder<'_, 'a> {
             Some(x) => x,
         };
 
-        let bind_group = self.ctx.device().create_bind_group(&BindGroupDescriptor {
+        let bind_group = self.device.device().create_bind_group(&BindGroupDescriptor {
             layout,
             entries: &self.bind_group_entries,
             label: None,
@@ -58,10 +58,10 @@ impl<'a> BindGroupBuilder<'_, 'a> {
     }
 }
 
-impl<'w> gpu::Context<'w> {
-    pub fn build_bind_group<'a>(&self) -> BindGroupBuilder<'w, 'a> {
+impl gpu::Device {
+    pub fn build_bind_group<'a>(&self) -> BindGroupBuilder<'a> {
         BindGroupBuilder {
-            ctx: self.clone(),
+            device: self.clone(),
             bind_group_layout: None,
             bind_group_layout_entries: vec![],
             bind_group_entries: vec![],

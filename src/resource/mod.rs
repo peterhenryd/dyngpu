@@ -1,12 +1,41 @@
 pub mod shaders;
 
-use crate::gpu;
+use std::any::TypeId;
+use crate::collections::TypeMap;
+use crate::Device;
 
-pub trait Resource: Default {
-    type Output<'w, 'a> where Self: 'a;
-    type OutputMut<'w, 'a> where Self: 'a;
+pub trait Resource {
+    fn create(device: &Device) -> Self;
+}
 
-    fn contextualize<'w, 'a>(&'a self, ctx: gpu::Context<'w>) -> Self::Output<'w, 'a>;
+pub struct Resources {
+    device: Device,
+    type_map: TypeMap,
+}
 
-    fn contextualize_mut<'w, 'a>(&'a mut self, ctx: gpu::Context<'w>) -> Self::OutputMut<'w, 'a>;
+impl Resources {
+    pub fn new(device: Device) -> Self {
+        Self {
+            device,
+            type_map: TypeMap::new(),
+        }
+    }
+
+    pub fn get<'w, T: Resource + 'static>(&mut self) -> &T {
+        let id = TypeId::of::<T>();
+        if !self.type_map.contains_id(id) {
+            self.type_map.set_by_id(id, Box::new(T::create(&self.device)));
+        }
+
+        self.type_map.get().unwrap()
+    }
+
+    pub fn get_mut<'w, T: Resource + 'static>(&mut self) -> &mut T {
+        let id = TypeId::of::<T>();
+        if !self.type_map.contains_id(id) {
+            self.type_map.set_by_id(id, Box::new(T::create(&self.device)));
+        }
+
+        self.type_map.get_mut().unwrap()
+    }
 }
